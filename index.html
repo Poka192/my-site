@@ -1,14 +1,45 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>내 첫 GitHub 페이지</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <h1>Hello, GitHub Pages!</h1>
-  <p>이 사이트는 <strong>GitHub Actions</strong> 로 자동 배포됩니다.</p>
+<meta charset="UTF-8">
+<title>카트늅바보 10개</title>
 
-  <script src="app.js"></script>
+<style>
+    body {
+        font-family: 'Noto Sans KR', sans-serif;   /* 한글이 깨지지 않도록 폰트 지정 */
+        text-align: center;
+        margin-top: 2rem;
+    }
+    .item {
+        margin-bottom: 0.5rem;   /* 각 항목 사이 여백 */
+    }
+</style>
+</head>
+
+<body>
+<!-- 1) 자바스크립트 없이 직접 10번 적어 넣는 방법 -->
+<p class="item">카트늅바보</p>
+<p class="item">카트늅바보</p>
+<p class="item">카트늅바보</p>
+<p class="item">카트늅바보</p>
+<p class="item">카트늅바보</p>
+<p class="item">카트늅바보</p>        
+<p class="item">카트늅바보</p>
+<p class="item">카트늅바보</p>
+<p class="item">카트늅바보</p>
+<p class="item">카트늅바보</p>
+
+<!-- 2) 자바스크립트를 이용해 동적으로 생성하는 예시 (아래 주석 해제 시 사용) -->
+
+<div id="container"></div>
+<script>
+    const container = document.getElementById('container');
+    for (let i = 0; i < 10; i++) {
+        const p = document.createElement('p');
+        p.className = 'item';
+        p.textContent = '카트늅바보';
+        container.appendChild(p);
+    }
+</script>
 </body>
 </html>
