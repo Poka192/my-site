@@ -1,91 +1,226 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-<meta charset="utf-8">
-<title>카트늅바보 애니메이션</title>
-
+<meta charset="UTF-8">
+<title>클릭 게임 + 카트늅바보</title>
 <style>
-  /* 전체 페이지 */
-  body{
-    margin:0;
-    overflow:hidden;          /* 스크롤 안 보이게 */
-    background:#111;          /* 어두운 배경으로 대비 */
-    font-family:'Noto Sans KR',sans-serif;
+  body {
+    font-family: sans-serif;
+    background: #000;
+    color: white;
+    text-align: center;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
   }
-
-  /* 움직이는 텍스트 */
-  .nubabo{
-    position:absolute;
-    white-space:nowrap;       /* 줄바꿈 방지 */
-    user-select:none;         /* 드래그 방지(선택 불가) */
-    cursor:pointer;
-    font-size:1.5rem;          /* 원하는 크기 조절 가능 */
-    will-change:transform, color;  /* GPU 가속 힌트 */
+  h1 {
+    margin-top: 20px;
+    position: relative;
+    z-index: 10;
+  }
+  #money {
+    font-size: 24px;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 10;
+  }
+  #click-btn {
+    font-size: 20px;
+    padding: 20px 40px;
+    cursor: pointer;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    transition: background 0.2s;
+    position: relative;
+    z-index: 10;
+  }
+  #click-btn:hover {
+    background: #45a049;
+  }
+  .shop {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    position: relative;
+    z-index: 10;
+  }
+  .item {
+    background: #222;
+    padding: 15px;
+    border-radius: 10px;
+    box-shadow: 0 0 5px rgba(255,255,255,0.2);
+    width: 200px;
+  }
+  .item button {
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+    background: #2196F3;
+    color: white;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  .item button:disabled {
+    background: gray;
+    cursor: not-allowed;
+  }
+  canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1; /* 배경 뒤로 보내기 */
   }
 </style>
 </head>
-
 <body>
-  <!-- 10개의 텍스트 -->
-  <span class="nubabo">카트늅바보</span>
-  <span class="nubabo">카트늅바보</span>
-  <span class="nubabo">카트늅바보</span>
-  <span class="nubabo">카트늅바보</span>
-  <span class="nubabo">카트늅바보</span>
-  <span class="nubabo">카트늅바보</span>
-  <span class="nubabo">카트늅바보</span>
-  <span class="nubabo">카트늅바보</span>
-  <span class="nubabo">카트늅바보</span>
-  <span class="nubabo">카트늅바보</span>
+  <h1>클릭 게임</h1>
+  <div id="money">돈: 0원</div>
+  <button id="click-btn">클릭!</button>
+
+  <div class="shop">
+    <div class="item">
+      <h3>카트늅바보</h3>
+      <p id="kart-lv">레벨: 0</p>
+      <p id="kart-cost">가격: 1원</p>
+      <button id="buy-kart">구매</button>
+    </div>
+    <div class="item">
+      <h3>클릭당 돈 증가</h3>
+      <p id="click-lv">레벨: 0</p>
+      <p id="click-cost">가격: 5원</p>
+      <button id="buy-click">구매</button>
+    </div>
+  </div>
+
+  <canvas id="kartCanvas"></canvas>
 
 <script>
-(() => {
-  const elems = Array.from(document.querySelectorAll('.nubabo'));
+  let money = 0;
+  let clickValue = 1;
 
-  /* 각 텍스트에 대한 물리값을 저장 */
-  const objects = elems.map(el => ({
-    el,
-    x: Math.random() * (window.innerWidth - el.offsetWidth),
-    y: Math.random() * (window.innerHeight - el.offsetHeight),
-    vx: (Math.random()*2 + 1) * (Math.random()<0.5?-1:1), // 1 ~ 3 px/frame
-    vy: (Math.random()*2 + 1) * (Math.random()<0.5?-1:1),
-    hue: Math.random() * 360,   // 색상 초기값
-    w: el.offsetWidth,
-    h: el.offsetHeight
-  }));
+  // 카트늅바보 업그레이드
+  let kartLevel = 0;
+  let kartCost = 1;
 
-  /* 애니메이션 루프 */
-  function animate(){
-    for(const obj of objects){
-      let {x, y, vx, vy, hue, w, h} = obj;
+  // 클릭당 돈 증가 업그레이드
+  let clickLevel = 0;
+  let clickCost = 5;
 
-      /* 위치 업데이트 */
-      x += vx;
-      y += vy;
+  const moneyDisplay = document.getElementById("money");
+  const clickBtn = document.getElementById("click-btn");
+  const kartLvDisplay = document.getElementById("kart-lv");
+  const kartCostDisplay = document.getElementById("kart-cost");
+  const clickLvDisplay = document.getElementById("click-lv");
+  const clickCostDisplay = document.getElementById("click-cost");
 
-      /* 화면 경계와 충돌 처리(튕김) */
-      if(x < 0){ x = 0; vx = -vx;}
-      else if(x + w > window.innerWidth){ x = window.innerWidth - w; vx = -vx;}
+  const buyKartBtn = document.getElementById("buy-kart");
+  const buyClickBtn = document.getElementById("buy-click");
 
-      if(y < 0){ y = 0; vy = -vy;}
-      else if(y + h > window.innerHeight){ y = window.innerHeight - h; vy = -vy;}
+  // 캔버스 설정
+  const canvas = document.getElementById("kartCanvas");
+  const ctx = canvas.getContext("2d");
+  let W = window.innerWidth;
+  let H = window.innerHeight;
+  canvas.width = W;
+  canvas.height = H;
 
-      /* 색상 변화 */
-      hue = (hue + 1) % 360;
-      obj.el.style.color = `hsl(${hue},80%,50%)`;
+  window.addEventListener("resize", () => {
+    W = window.innerWidth;
+    H = window.innerHeight;
+    canvas.width = W;
+    canvas.height = H;
+  });
 
-      /* 화면에 반영(translate3d 사용으로 GPU 가속) */
-      obj.el.style.transform = `translate3d(${x}px,${y}px,0)`;
+  // 카트늅 객체 배열
+  let kartList = [];
 
-      /* 객체에 저장값 업데이트 */
-      obj.x = x; obj.y = y; obj.vx = vx; obj.vy = vy; obj.hue = hue;
+  function createKart() {
+    let speed = Math.random() * 2 + 1;
+    kartList.push({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      dx: (Math.random() < 0.5 ? -1 : 1) * speed,
+      dy: (Math.random() < 0.5 ? -1 : 1) * speed,
+      color: randomColor()
+    });
+  }
+
+  function randomColor() {
+    return `hsl(${Math.random()*360}, 100%, 50%)`;
+  }
+
+  function updateDisplay() {
+    moneyDisplay.textContent = `돈: ${money}원`;
+    kartLvDisplay.textContent = `레벨: ${kartLevel}`;
+    kartCostDisplay.textContent = `가격: ${kartCost}원`;
+    clickLvDisplay.textContent = `레벨: ${clickLevel}`;
+    clickCostDisplay.textContent = `가격: ${clickCost}원`;
+
+    buyKartBtn.disabled = money < kartCost;
+    buyClickBtn.disabled = money < clickCost;
+  }
+
+  clickBtn.addEventListener("click", () => {
+    money += clickValue;
+    updateDisplay();
+  });
+
+  buyKartBtn.addEventListener("click", () => {
+    if (money >= kartCost) {
+      money -= kartCost;
+      kartLevel++;
+      kartCost *= 2; // 가격 2배씩
+      createKart();
+      updateDisplay();
     }
+  });
+
+  buyClickBtn.addEventListener("click", () => {
+    if (money >= clickCost) {
+      money -= clickCost;
+      clickLevel++;
+      clickValue++;
+      clickCost *= 2; // 가격 2배씩
+      updateDisplay();
+    }
+  });
+
+  // 카트늅 움직임
+  function animate() {
+    ctx.clearRect(0, 0, W, H);
+    ctx.font = "20px Arial";
+    ctx.textBaseline = "top";
+
+    for (let kart of kartList) {
+      kart.x += kart.dx;
+      kart.y += kart.dy;
+
+      // 색 계속 바꾸기
+      kart.color = randomColor();
+
+      // 벽 부딪힘 체크
+      if (kart.x <= 0 || kart.x + 60 >= W) {
+        kart.dx *= -1;
+        money += kartLevel; // 업그레이드 레벨 비례 수익
+      }
+      if (kart.y <= 0 || kart.y + 20 >= H) {
+        kart.dy *= -1;
+        money += kartLevel;
+      }
+
+      ctx.fillStyle = kart.color;
+      ctx.fillText("카트늅", kart.x, kart.y);
+    }
+
+    updateDisplay();
     requestAnimationFrame(animate);
   }
 
-  /* 최초 실행 */
-  requestAnimationFrame(animate);
-})();
+  animate();
+  updateDisplay();
 </script>
 </body>
 </html>
